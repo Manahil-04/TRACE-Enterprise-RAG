@@ -1,0 +1,10 @@
+.myvenv/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.env
+data/
+.claude/

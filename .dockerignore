@@ -1,0 +1,12 @@
+.git/
+.myvenv/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+backend/data/
+backend/.env
+node_modules/
+frontend/dist/
