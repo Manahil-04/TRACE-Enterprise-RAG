@@ -16,7 +16,11 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Enclave",
+    description="Self-hosted RAG for privacy-conscious organizations.",
+    lifespan=lifespan,
+)
 
 # Only needed when the frontend runs on its own dev server (Vite, different
 # origin). The production build is served from this same app - no CORS needed.

@@ -50,7 +50,7 @@ class PgVectorStore:
         with self._conn.cursor() as cursor:
             cursor.execute(
                 "SELECT text, source, page, chunk_index, document_id FROM chunks "
-                "ORDER BY embedding <=> %s LIMIT %s",
+                "ORDER BY embedding <=> %s::vector LIMIT %s",
                 (query_embedding, k),
             )
             rows = cursor.fetchall()
