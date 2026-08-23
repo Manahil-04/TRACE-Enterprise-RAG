@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api";
+import { LogoMark } from "../components/icons";
 
 export function RegisterPage() {
   const { register, login } = useAuth();
@@ -28,35 +29,46 @@ export function RegisterPage() {
 
   return (
     <div className="auth-page">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <h1>Create an account</h1>
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={8}
-            required
-          />
-        </label>
-        {error && <p className="form-error">{error}</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating account..." : "Register"}
-        </button>
-        <p>
+      <div className="auth-card">
+        <div className="auth-card-brand">
+          <LogoMark />
+          <span>Enclave</span>
+        </div>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div>
+            <h1>Create an account</h1>
+            <p className="auth-subtitle">Join your organization's private knowledge base.</p>
+          </div>
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" disabled={submitting}>
+            {submitting ? <span className="spinner" /> : "Register"}
+          </button>
+        </form>
+        <p className="auth-footer">
           Already have an account? <Link to="/login">Log in</Link>
         </p>
-      </form>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { listDocuments, deleteDocument, ApiError, type DocumentRead } from "../api";
+import { DocumentsIcon, FileIcon, TrashIcon } from "../components/icons";
 
 export function DocumentsPage() {
   const { token } = useAuth();
@@ -31,12 +32,20 @@ export function DocumentsPage() {
 
   return (
     <div className="page">
-      <h1>Documents</h1>
+      <div className="page-header">
+        <h1>Documents</h1>
+        <p>Everyone in your organization can search these. Only the uploader can delete one.</p>
+      </div>
+
       {error && <p className="form-error">{error}</p>}
+
       {loading ? (
         <p>Loading...</p>
       ) : documents.length === 0 ? (
-        <p>No documents uploaded yet.</p>
+        <div className="empty-state">
+          <DocumentsIcon width={28} height={28} />
+          <p>No documents uploaded yet.</p>
+        </div>
       ) : (
         <table className="documents-table">
           <thead>
@@ -49,11 +58,21 @@ export function DocumentsPage() {
           <tbody>
             {documents.map((doc) => (
               <tr key={doc.id}>
-                <td>{doc.filename}</td>
+                <td>
+                  <div className="doc-filename">
+                    <FileIcon width={16} height={16} />
+                    {doc.filename}
+                  </div>
+                </td>
                 <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
                 <td>
-                  <button type="button" onClick={() => handleDelete(doc.id)}>
-                    Delete
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Delete ${doc.filename}`}
+                    onClick={() => handleDelete(doc.id)}
+                  >
+                    <TrashIcon width={16} height={16} />
                   </button>
                 </td>
               </tr>
