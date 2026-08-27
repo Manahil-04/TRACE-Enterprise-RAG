@@ -1,22 +1,5 @@
-INFO:     Started server process [11792]
+INFO:     Started server process [19692]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:51183 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55220 - "OPTIONS /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54776 - "OPTIONS /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54776 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:54776 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:54776 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:55220 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:55220 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:55220 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:52099 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:52099 - "GET /documents HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:52476 - "POST /auth/login HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52476 - "GET /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55619 - "GET /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59348 - "OPTIONS /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57021 - "OPTIONS /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57021 - "GET /documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59348 - "GET /documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50842 - "POST /auth/login HTTP/1.1" 200 OK

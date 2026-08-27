@@ -8,6 +8,7 @@ from app.core.db import Base
 
 if TYPE_CHECKING:
     from app.models.document import Document
+    from app.models.exploration import Exploration
 
 
 class User(Base):
@@ -21,3 +22,4 @@ class User(Base):
     )
 
     documents: Mapped[list["Document"]] = relationship(back_populates="owner")
+    explorations: Mapped[list["Exploration"]] = relationship(back_populates="owner")

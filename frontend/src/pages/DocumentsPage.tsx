@@ -1,19 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { listDocuments, deleteDocument, ApiError, type DocumentRead } from "../api";
-import { DocumentsIcon, FileIcon, TrashIcon } from "../components/icons";
+import { listDocuments, deleteDocument, type DocumentRead } from "../api";
+import { mapError } from "../lib/errorMessages";
+import { DocumentsIcon, TrashIcon } from "../components/icons";
+import { Notice } from "../components/Notice";
+
+function getExtension(filename: string): string {
+  const idx = filename.lastIndexOf(".");
+  return idx >= 0 ? filename.slice(idx + 1).toUpperCase() : "FILE";
+}
+
+function labelForExtension(ext: string): string {
+  if (ext === "PDF") return "PDF documents";
+  if (ext === "MD") return "Markdown documents";
+  if (ext === "TXT") return "Text documents";
+  if (ext === "DOCX" || ext === "DOC") return "Word documents";
+  return `${ext} documents`;
+}
+
+function titleFromFilename(filename: string): string {
+  const idx = filename.lastIndexOf(".");
+  return idx > 0 ? filename.slice(0, idx) : filename;
+}
 
 export function DocumentsPage() {
   const { token } = useAuth();
   const [documents, setDocuments] = useState<DocumentRead[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ReturnType<typeof mapError> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!token) return;
     listDocuments(token)
       .then(setDocuments)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load documents"))
+      .catch((err) => setError(mapError(err, "Couldn't load documents")))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -26,18 +46,33 @@ export function DocumentsPage() {
     } catch (err) {
       // Deletion is restricted to the uploader - a 403 here is expected for
       // documents someone else uploaded, since visibility is shared org-wide.
-      setError(err instanceof ApiError ? err.message : "Failed to delete document");
+      setError(mapError(err, "Couldn't delete document"));
     }
   }
+
+  const groups = useMemo(() => {
+    const byExt = new Map<string, DocumentRead[]>();
+    for (const doc of documents) {
+      const ext = getExtension(doc.filename);
+      if (!byExt.has(ext)) byExt.set(ext, []);
+      byExt.get(ext)!.push(doc);
+    }
+    return [...byExt.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([ext, items]) => ({ ext, label: labelForExtension(ext), items }));
+  }, [documents]);
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Documents</h1>
+        <span className="eyebrow">Document library</span>
+        <h1 className="heading-display">Documents</h1>
         <p>Everyone in your organization can search these. Only the uploader can delete one.</p>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <Notice type="error" title={error.title} message={error.message} details={error.details} onDismiss={() => setError(null)} />
+      )}
 
       {loading ? (
         <p>Loading...</p>
@@ -47,38 +82,39 @@ export function DocumentsPage() {
           <p>No documents uploaded yet.</p>
         </div>
       ) : (
-        <table className="documents-table">
-          <thead>
-            <tr>
-              <th>Filename</th>
-              <th>Uploaded</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.map((doc) => (
-              <tr key={doc.id}>
-                <td>
-                  <div className="doc-filename">
-                    <FileIcon width={16} height={16} />
-                    {doc.filename}
+        groups.map((group) => (
+          <div className="library-group" key={group.ext}>
+            <div className="library-group-header">
+              <h2>{group.label}</h2>
+              <span className="library-group-count">
+                {group.items.length} document{group.items.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <div className="library-rows">
+              {group.items.map((doc, index) => (
+                <div className="library-row" key={doc.id}>
+                  <span className="library-row-index">{String(index + 1).padStart(2, "0")}</span>
+                  <div className="library-row-main">
+                    <div className="library-row-title">{titleFromFilename(doc.filename)}</div>
+                    <div className="library-row-meta">
+                      <span>{group.ext}</span>
+                      <span>·</span>
+                      <span>Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                </td>
-                <td>{new Date(doc.uploaded_at).toLocaleString()}</td>
-                <td>
                   <button
                     type="button"
-                    className="icon-button"
+                    className="icon-button library-row-delete"
                     aria-label={`Delete ${doc.filename}`}
                     onClick={() => handleDelete(doc.id)}
                   >
                     <TrashIcon width={16} height={16} />
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
       )}
     </div>
   );

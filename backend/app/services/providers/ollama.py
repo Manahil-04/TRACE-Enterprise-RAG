@@ -32,8 +32,10 @@ class OllamaLLMProvider:
         self._base_url = settings.OLLAMA_BASE_URL.rstrip("/")
         self._model = settings.OLLAMA_LLM_MODEL
 
-    def generate_answer(self, query: str, context_chunks: list[str]) -> str:
-        prompt = build_rag_prompt(query, context_chunks)
+    def generate_answer(
+        self, query: str, context_chunks: list[str], history: list[tuple[str, str]] | None = None
+    ) -> str:
+        prompt = build_rag_prompt(query, context_chunks, history)
         response = httpx.post(
             f"{self._base_url}/api/generate",
             json={"model": self._model, "prompt": prompt, "stream": False},

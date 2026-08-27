@@ -16,32 +16,23 @@ function Icon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** A node tracing back to its source - the product's namesake, not a brand mark for decoration's sake. */
 export function LogoMark(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 32 32" width="28" height="28" fill="none" {...props}>
-      <rect width="32" height="32" rx="8" fill="url(#logo-gradient)" />
-      <path
-        d="M9 21V11.5C9 10.6716 9.67157 10 10.5 10H16.5C18.9853 10 21 12.0147 21 14.5C21 16.9853 18.9853 19 16.5 19H12"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="17" cy="22" r="1.6" fill="white" />
-      <defs>
-        <linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#14b8ac" />
-          <stop offset="1" stopColor="#0c6e70" />
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" {...props}>
+      <rect x="1" y="1" width="22" height="22" rx="5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="15.5" cy="9" r="2.1" fill="currentColor" />
+      <path d="M15.5 11.6V15a1.6 1.6 0 0 1-1.6 1.6H8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="7" cy="16.6" r="1.3" fill="currentColor" />
     </svg>
   );
 }
 
-export function ChatIcon(props: SVGProps<SVGSVGElement>) {
+export function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </Icon>
   );
 }
@@ -114,10 +105,47 @@ export function CloudUploadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function SparkleIcon(props: SVGProps<SVGSVGElement>) {
+export function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
-      <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z" />
+      <polyline points="9 6 15 12 9 18" />
+    </Icon>
+  );
+}
+
+export function CheckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <polyline points="20 6 9 17 4 12" />
+    </Icon>
+  );
+}
+
+export function AlertIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </Icon>
+  );
+}
+
+export function InfoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </Icon>
+  );
+}
+
+export function CloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </Icon>
   );
 }

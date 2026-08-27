@@ -29,8 +29,10 @@ class GeminiLLMProvider:
         self._client = Client(api_key=settings.GEMINI_API_KEY)
         self._model = settings.GEMINI_LLM_MODEL
 
-    def generate_answer(self, query: str, context_chunks: list[str]) -> str:
-        prompt = build_rag_prompt(query, context_chunks)
+    def generate_answer(
+        self, query: str, context_chunks: list[str], history: list[tuple[str, str]] | None = None
+    ) -> str:
+        prompt = build_rag_prompt(query, context_chunks, history)
         response = self._client.models.generate_content(model=self._model, contents=prompt)
         if response.text is None:
             raise ValueError("Gemini returned empty response")

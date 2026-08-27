@@ -8,4 +8,6 @@ class EmbeddingProvider(Protocol):
 
 @runtime_checkable
 class LLMProvider(Protocol):
-    def generate_answer(self, query: str, context_chunks: list[str]) -> str: ...
+    def generate_answer(
+        self, query: str, context_chunks: list[str], history: list[tuple[str, str]] | None = None
+    ) -> str: ...

@@ -1,94 +1,125 @@
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { uploadDocument, ApiError } from "../api";
+import { uploadDocument } from "../api";
+import { mapError } from "../lib/errorMessages";
 import { CloudUploadIcon, FileIcon, UploadIcon } from "../components/icons";
+import { Notice } from "../components/Notice";
+
+type UploadStatus = "idle" | "uploading" | "indexing" | "success" | "error";
 
 export function UploadPage() {
   const { token } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<UploadStatus>("idle");
+  const [progress, setProgress] = useState(0);
+  const [indexedName, setIndexedName] = useState<string | null>(null);
+  const [error, setError] = useState<ReturnType<typeof mapError> | null>(null);
+
+  function selectFile(next: File | null) {
+    setFile(next);
+    setStatus("idle");
+    setError(null);
+  }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragActive(false);
     const dropped = event.dataTransfer.files?.[0];
-    if (dropped) {
-      setFile(dropped);
-      setMessage(null);
-      setError(null);
-    }
+    if (dropped) selectFile(dropped);
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!token || !file) return;
     setError(null);
-    setMessage(null);
-    setUploading(true);
+    setProgress(0);
+    setStatus("uploading");
     try {
-      const result = await uploadDocument(token, file);
-      setMessage(result.message);
+      const result = await uploadDocument(token, file, (pct) => {
+        setProgress(pct);
+        if (pct >= 100) setStatus("indexing");
+      });
+      setStatus("success");
+      setIndexedName(result.filename);
       setFile(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
+      setStatus("error");
+      setError(mapError(err, "Upload failed"));
     }
   }
+
+  const busy = status === "uploading" || status === "indexing";
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Upload a document</h1>
-        <p>PDFs are chunked, embedded, and stored entirely on your own infrastructure.</p>
+        <span className="eyebrow">Add to the archive</span>
+        <h1 className="heading-display">Add document</h1>
+        <p>Documents are chunked, embedded, and stored entirely on your own infrastructure.</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div
-          className={dragActive ? "dropzone dropzone-active" : "dropzone"}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setMessage(null);
-              setError(null);
+      {status === "success" && indexedName && (
+        <Notice type="success" title="Indexed" message={indexedName} onDismiss={() => setStatus("idle")} />
+      )}
+
+      {status === "error" && error && (
+        <Notice
+          type="error"
+          title={error.title}
+          message={error.message}
+          details={error.details}
+          onDismiss={() => setStatus("idle")}
+        />
+      )}
+
+      {busy ? (
+        <div className="upload-progress-panel">
+          <div className="upload-progress-header">
+            <span className="upload-progress-filename">{file?.name}</span>
+            <span className="upload-progress-pct">{status === "indexing" ? "Indexing…" : `${progress}%`}</span>
+          </div>
+          <div className="upload-progress-track">
+            <div
+              className={status === "indexing" ? "upload-progress-fill indeterminate" : "upload-progress-fill"}
+              style={status === "indexing" ? undefined : { width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div
+            className={dragActive ? "upload-dropzone dropzone-active" : "upload-dropzone"}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
             }}
-          />
-          <div className="dropzone-icon">
-            <CloudUploadIcon />
+            onDragLeave={() => setDragActive(false)}
+            onDrop={handleDrop}
+          >
+            <input type="file" accept="application/pdf" onChange={(e) => selectFile(e.target.files?.[0] ?? null)} />
+            <div className="upload-dropzone-icon">
+              <CloudUploadIcon />
+            </div>
+            <div className="upload-dropzone-title">Drop a file here or choose one</div>
+            <div className="upload-dropzone-hint">PDF</div>
           </div>
-          <div className="dropzone-title">Drag and drop a PDF here</div>
-          <div className="dropzone-hint">or click to browse</div>
-        </div>
 
-        {file && (
-          <div className="selected-file">
-            <FileIcon width={16} height={16} />
-            {file.name}
+          {file && (
+            <div className="selected-file">
+              <FileIcon width={16} height={16} />
+              {file.name}
+            </div>
+          )}
+
+          <div className="upload-actions">
+            <button type="submit" disabled={!file}>
+              <UploadIcon width={16} height={16} />
+              Add document
+            </button>
           </div>
-        )}
-
-        <div className="upload-actions">
-          <button type="submit" disabled={!file || uploading}>
-            {uploading ? <span className="spinner" /> : <UploadIcon width={16} height={16} />}
-            {uploading ? "Uploading" : "Upload"}
-          </button>
-        </div>
-      </form>
-
-      {message && <p className="form-success">{message}</p>}
-      {error && <p className="form-error">{error}</p>}
+        </form>
+      )}
     </div>
   );
 }
