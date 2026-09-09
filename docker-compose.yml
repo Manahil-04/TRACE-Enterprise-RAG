@@ -33,9 +33,14 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      # Uploaded originals (see STORAGE_DIR) - without this they vanish
+      # whenever the container is recreated.
+      - app_storage:/app/storage
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   pgdata:
+  app_storage:

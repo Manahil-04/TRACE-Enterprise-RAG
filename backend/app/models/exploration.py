@@ -9,6 +9,7 @@ from app.core.db import Base
 if TYPE_CHECKING:
     from app.models.message import Message
     from app.models.user import User
+    from app.models.workspace import Workspace
 
 
 class Exploration(Base):
@@ -16,6 +17,9 @@ class Exploration(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    # Fixed at creation time - an exploration's retrieval is always scoped to
+    # the workspace it started in, even if the user's memberships change later.
+    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -27,6 +31,7 @@ class Exploration(Base):
     )
 
     owner: Mapped["User"] = relationship(back_populates="explorations")
+    workspace: Mapped["Workspace"] = relationship(back_populates="explorations")
     messages: Mapped[list["Message"]] = relationship(
         back_populates="exploration", order_by="Message.created_at", cascade="all, delete-orphan"
     )

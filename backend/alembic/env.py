@@ -11,7 +11,15 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))  # put backend/ on the
 
 from app.core.config import settings  # noqa: E402
 from app.core.db import Base  # noqa: E402
-from app.models import document, exploration, message, user  # noqa: E402,F401  register models on Base.metadata
+from app.models import (  # noqa: E402,F401  register models on Base.metadata
+    app_settings,
+    document,
+    exploration,
+    message,
+    user,
+    workspace,
+    workspace_membership,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

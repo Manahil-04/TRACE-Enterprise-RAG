@@ -1,20 +1,18 @@
-import { useMemo, type MouseEvent } from "react";
+import { type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useAppStatus } from "../status/AppStatusContext";
-import { decodeJwtEmail } from "../lib/jwt";
-import { LogoMark, LogoutIcon, SearchIcon } from "./icons";
+import { LogoMark, SearchIcon } from "./icons";
+import { ProfileMenu } from "./ProfileMenu";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const { status } = useAppStatus();
   const navigate = useNavigate();
   const location = useLocation();
-  const email = useMemo(() => (token ? decodeJwtEmail(token) : null), [token]);
 
   if (!token) return null;
-
-  const initial = email ? email[0].toUpperCase() : "U";
 
   function handleSearchClick(event: MouseEvent) {
     event.preventDefault();
@@ -44,21 +42,8 @@ export function Header() {
           <span className="app-header-status-dot" />
           <span>{status === "searching" ? "Searching" : "Ready"}</span>
         </span>
-        <div className="user-chip">
-          <span className="user-chip-avatar">{initial}</span>
-          {email && <span className="user-chip-email">{email}</span>}
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Log out"
-            onClick={() => {
-              logout();
-              navigate("/login");
-            }}
-          >
-            <LogoutIcon width={16} height={16} />
-          </button>
-        </div>
+        <ThemeToggle />
+        <ProfileMenu />
       </div>
     </header>
   );

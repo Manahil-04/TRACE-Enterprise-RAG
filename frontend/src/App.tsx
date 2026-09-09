@@ -3,11 +3,16 @@ import { useAuth } from "./auth/AuthContext";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ChatPage } from "./pages/ChatPage";
 import { UploadPage } from "./pages/UploadPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
+import { SearchPage } from "./pages/SearchPage";
+import { AdminSettingsPage } from "./pages/AdminSettingsPage";
+import { AdminWorkspacesPage } from "./pages/AdminWorkspacesPage";
+import { AdminUsersPage } from "./pages/AdminUsersPage";
 
 // Layout for the authenticated app: header + sidebar + padded content area.
 // Login/Register render standalone (see App below) so their own full-viewport
@@ -64,6 +69,38 @@ export function App() {
             <ProtectedRoute>
               <DocumentsPage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <SearchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminRoute>
+              <AdminSettingsPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/workspaces"
+          element={
+            <AdminRoute>
+              <AdminWorkspacesPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminUsersPage />
+            </AdminRoute>
           }
         />
         <Route path="*" element={<Navigate to="/chat" replace />} />

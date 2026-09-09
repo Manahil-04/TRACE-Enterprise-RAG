@@ -1,12 +1,23 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { askQuestion, getExploration, type ExplorationDetail, type MessageRead, type SourceChunk } from "../api";
+import { useWorkspace } from "../workspace/WorkspaceContext";
+import {
+  askQuestion,
+  getExploration,
+  renameExploration,
+  deleteExploration,
+  viewDocument,
+  type ExplorationDetail,
+  type MessageRead,
+  type SourceChunk,
+} from "../api";
 import { formatRelativeTime, useExplorations } from "../explorations/ExplorationsContext";
 import { useAppStatus } from "../status/AppStatusContext";
 import { mapError } from "../lib/errorMessages";
-import { ChevronRightIcon, SendIcon } from "../components/icons";
+import { ChevronRightIcon, ExternalLinkIcon, PencilIcon, SendIcon, TrashIcon } from "../components/icons";
 import { Notice } from "../components/Notice";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 const SUGGESTIONS = [
   "How does authentication work?",
@@ -96,6 +107,7 @@ function RetrievalTrail({ question, sourceCount }: { question: string; sourceCou
 
 export function ChatPage() {
   const { token } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const { summaries, refresh } = useExplorations();
   const { setStatus } = useAppStatus();
   const navigate = useNavigate();
@@ -109,6 +121,10 @@ export function ChatPage() {
 
   const [detail, setDetail] = useState<ExplorationDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [renamingTitle, setRenamingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [openTrails, setOpenTrails] = useState<Set<number>>(new Set());
   const [expandedEvidence, setExpandedEvidence] = useState<Record<number, Set<number>>>({});
@@ -154,7 +170,17 @@ export function ChatPage() {
 
   useEffect(() => {
     setPendingFailure(null);
+    setRenamingTitle(false);
   }, [activeId]);
+
+  // If the user switches workspaces while viewing an exploration that
+  // belongs to a different one, it's no longer in scope for this workspace -
+  // return to the landing search rather than leave a stale view up.
+  useEffect(() => {
+    if (detail && activeWorkspaceId !== null && detail.workspace_id !== activeWorkspaceId) {
+      navigate("/chat");
+    }
+  }, [detail, activeWorkspaceId, navigate]);
 
   useEffect(() => {
     if (pendingScroll === null) return;
@@ -170,13 +196,14 @@ export function ChatPage() {
   async function runQuery(rawQuery: string) {
     const q = rawQuery.trim();
     if (!token || !q || loadingStage) return;
+    if (activeId === null && activeWorkspaceId === null) return;
     setError(null);
     setPendingFailure(null);
     setLoadingStage("searching");
     const toPreparing = setTimeout(() => setLoadingStage("preparing"), 500);
     const toSynthesizing = setTimeout(() => setLoadingStage("synthesizing"), 1100);
     try {
-      const response = await askQuestion(token, q, activeId);
+      const response = await askQuestion(token, q, activeId, activeId === null ? activeWorkspaceId : null);
 
       if (response.generation_failed || response.answer === null || response.exploration_id === null) {
         setPendingFailure({ question: q, sources: response.sources });
@@ -198,6 +225,12 @@ export function ChatPage() {
           : {
               id: response.exploration_id!,
               title: response.exploration_title ?? q,
+              // This branch only runs for a brand-new exploration (prev is
+              // null/stale) - it was just created in whatever workspace was
+              // active when the request went out. The `?? 0` never actually
+              // triggers: runQuery already bails out earlier when both
+              // activeId and activeWorkspaceId are null.
+              workspace_id: activeWorkspaceId ?? detail?.workspace_id ?? 0,
               created_at: newMessage.created_at,
               updated_at: newMessage.created_at,
               messages: [newMessage],
@@ -234,6 +267,15 @@ export function ChatPage() {
     });
   }
 
+  async function handleOpenSource(source: SourceChunk) {
+    if (!token || source.document_id === null) return;
+    try {
+      await viewDocument(token, source.document_id, source.page);
+    } catch (err) {
+      setError(mapError(err, "Couldn't open document"));
+    }
+  }
+
   function toggleEvidence(messageId: number, index: number) {
     setExpandedEvidence((prev) => {
       const set = new Set(prev[messageId] ?? []);
@@ -251,6 +293,50 @@ export function ChatPage() {
     });
     setFocusedMessageId(messageId);
     setPendingScroll(index);
+  }
+
+  function startRenameTitle() {
+    if (!showingDetail) return;
+    setTitleDraft(showingDetail.title);
+    setRenamingTitle(true);
+  }
+
+  async function commitRenameTitle() {
+    const title = titleDraft.trim();
+    setRenamingTitle(false);
+    if (!token || !showingDetail || !title || title === showingDetail.title) return;
+    try {
+      await renameExploration(token, showingDetail.id, title);
+      setDetail((prev) => (prev ? { ...prev, title } : prev));
+      refresh();
+    } catch (err) {
+      setError(mapError(err, "Couldn't rename exploration"));
+    }
+  }
+
+  function handleTitleRenameSubmit(event: FormEvent) {
+    event.preventDefault();
+    commitRenameTitle();
+  }
+
+  function handleTitleRenameKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") setRenamingTitle(false);
+  }
+
+  async function confirmDeleteExploration() {
+    if (!token || !showingDetail) return;
+    setDeleting(true);
+    try {
+      await deleteExploration(token, showingDetail.id);
+      refresh();
+      setConfirmingDelete(false);
+      setDetail(null);
+      navigate("/chat");
+    } catch (err) {
+      setError(mapError(err, "Couldn't delete exploration"));
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const focusedMessage = showingDetail
@@ -277,7 +363,7 @@ export function ChatPage() {
                   onChange={(e) => setQueryInput(e.target.value)}
                   autoFocus
                 />
-                <button type="submit" className="search-input-submit" disabled={!queryInput.trim() || isLoading}>
+                <button type="submit" className="search-input-submit" disabled={!queryInput.trim() || isLoading || (activeId === null && activeWorkspaceId === null)}>
                   <SendIcon width={17} height={17} />
                 </button>
               </div>
@@ -325,7 +411,7 @@ export function ChatPage() {
                   onChange={(e) => setQueryInput(e.target.value)}
                   autoFocus
                 />
-                <button type="submit" className="search-input-submit" disabled={!queryInput.trim() || isLoading}>
+                <button type="submit" className="search-input-submit" disabled={!queryInput.trim() || isLoading || (activeId === null && activeWorkspaceId === null)}>
                   {isLoading ? <span className="spinner" /> : <SendIcon width={16} height={16} />}
                 </button>
               </div>
@@ -342,7 +428,35 @@ export function ChatPage() {
               {showingDetail && (
                 <>
                   <div className="exploration-header">
-                    <span className="eyebrow">{showingDetail.title}</span>
+                    {renamingTitle ? (
+                      <form className="rename-form" onSubmit={handleTitleRenameSubmit}>
+                        <input
+                          className="rename-input"
+                          value={titleDraft}
+                          autoFocus
+                          onChange={(e) => setTitleDraft(e.target.value)}
+                          onBlur={commitRenameTitle}
+                          onKeyDown={handleTitleRenameKeyDown}
+                        />
+                      </form>
+                    ) : (
+                      <span className="eyebrow exploration-header-title">
+                        {showingDetail.title}
+                        <span className="row-actions">
+                          <button type="button" className="icon-button" aria-label="Rename exploration" onClick={startRenameTitle}>
+                            <PencilIcon width={13} height={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-button row-action-danger"
+                            aria-label="Delete exploration"
+                            onClick={() => setConfirmingDelete(true)}
+                          >
+                            <TrashIcon width={13} height={13} />
+                          </button>
+                        </span>
+                      </span>
+                    )}
                     <span className="exploration-header-meta">
                       {showingDetail.messages.length} question{showingDetail.messages.length === 1 ? "" : "s"} ·{" "}
                       {showingDetail.messages.reduce((sum, m) => sum + m.sources.length, 0)} sources
@@ -472,25 +586,38 @@ export function ChatPage() {
                             "evidence-item" + (expanded ? " expanded" : "") + (flashIndex === index ? " flash" : "")
                           }
                         >
-                          <button
-                            type="button"
-                            className="evidence-item-header"
-                            onClick={() => toggleEvidence(focusedMessage.id, index)}
-                          >
-                            <span className="evidence-number">{String(index + 1).padStart(2, "0")}</span>
-                            <span className="evidence-item-body-col">
-                              <span className="evidence-title">{source.source}</span>
-                              <span className="evidence-meta">
-                                <span>{fileType(source.source)}</span>
-                                <span>· Page {source.page}</span>
+                          <div className="evidence-item-header-row">
+                            <button
+                              type="button"
+                              className="evidence-item-header"
+                              onClick={() => toggleEvidence(focusedMessage.id, index)}
+                            >
+                              <span className="evidence-number">{String(index + 1).padStart(2, "0")}</span>
+                              <span className="evidence-item-body-col">
+                                <span className="evidence-title">{source.source}</span>
+                                <span className="evidence-meta">
+                                  <span>{fileType(source.source)}</span>
+                                  <span>· Page {source.page}</span>
+                                </span>
+                                <span className="evidence-relevance">
+                                  <span className={`evidence-relevance-dot ${relevance.className}`} />
+                                  {relevance.label}
+                                </span>
                               </span>
-                              <span className="evidence-relevance">
-                                <span className={`evidence-relevance-dot ${relevance.className}`} />
-                                {relevance.label}
-                              </span>
-                            </span>
-                            <ChevronRightIcon className="evidence-chevron" width={15} height={15} />
-                          </button>
+                              <ChevronRightIcon className="evidence-chevron" width={15} height={15} />
+                            </button>
+                            {source.document_id !== null && source.file_available && (
+                              <button
+                                type="button"
+                                className="icon-button evidence-open-link"
+                                aria-label={`Open ${source.source} at page ${source.page}`}
+                                title="Open source document at this page"
+                                onClick={() => handleOpenSource(source)}
+                              >
+                                <ExternalLinkIcon width={14} height={14} />
+                              </button>
+                            )}
+                          </div>
                           {expanded && <div className="evidence-body">{source.text}</div>}
                         </div>
                       );
@@ -501,6 +628,17 @@ export function ChatPage() {
             )}
           </div>
         </>
+      )}
+
+      {confirmingDelete && showingDetail && (
+        <ConfirmDialog
+          title="Delete this exploration?"
+          message={`"${showingDetail.title}" and its ${showingDetail.messages.length} question${showingDetail.messages.length === 1 ? "" : "s"} will be permanently deleted. This can't be undone.`}
+          confirmLabel="Delete"
+          busy={deleting}
+          onConfirm={confirmDeleteExploration}
+          onCancel={() => setConfirmingDelete(false)}
+        />
       )}
     </div>
   );

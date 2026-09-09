@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api";
 import { LogoMark } from "../components/icons";
 import { Notice } from "../components/Notice";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -48,6 +49,7 @@ export function LoginPage() {
       </div>
 
       <div className="auth-panel">
+        <ThemeToggle className="auth-theme-toggle" />
         <div className="auth-card">
           <form className="auth-form" onSubmit={handleSubmit}>
             <div>

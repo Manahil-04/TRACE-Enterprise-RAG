@@ -13,6 +13,12 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
+# tesseract-ocr: OCR engine for scanned/image-only PDF pages (see
+# app/api/upload.py). PyMuPDF rasterizes pages itself, so no poppler needed.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

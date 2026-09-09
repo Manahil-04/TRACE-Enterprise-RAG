@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { useWorkspace } from "../workspace/WorkspaceContext";
 import { listExplorations, ApiError, type ExplorationSummary } from "../api";
 
 interface ExplorationsContextValue {
@@ -13,27 +14,28 @@ const ExplorationsContext = createContext<ExplorationsContextValue | null>(null)
 
 export function ExplorationsProvider({ children }: { children: ReactNode }) {
   const { token } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const [summaries, setSummaries] = useState<ExplorationSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!token) return;
+    if (!token || activeWorkspaceId === null) return;
     setLoading(true);
     setError(null);
     try {
-      setSummaries(await listExplorations(token));
+      setSummaries(await listExplorations(token, activeWorkspaceId));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load explorations");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, activeWorkspaceId]);
 
   useEffect(() => {
-    if (token) refresh();
+    if (token && activeWorkspaceId !== null) refresh();
     else setSummaries([]);
-  }, [token, refresh]);
+  }, [token, activeWorkspaceId, refresh]);
 
   const value = useMemo<ExplorationsContextValue>(
     () => ({ summaries, loading, error, refresh }),

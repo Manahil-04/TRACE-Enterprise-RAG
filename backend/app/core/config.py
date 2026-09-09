@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     EMBEDDING_DIM: int = 768
     DATABASE_URL: str = "postgresql://raguser:ragpass@localhost:5432/ragdb"
 
+    # Where original uploaded files are kept on disk for view/download - see
+    # app/services/storage.py. Documents uploaded before this existed have no
+    # file here (Document.storage_path is null for them).
+    STORAGE_DIR: str = "./storage/documents"
+
+    # Full path to the tesseract binary. Leave unset when it's already on
+    # PATH (true in the Docker image, where apt installs it there) - only
+    # needed for environments (e.g. a bare Windows dev machine) where it
+    # isn't, or wasn't yet when this process started.
+    TESSERACT_CMD: str | None = None
+
     # Auth - no default secret on purpose; app must fail to boot without one set
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"

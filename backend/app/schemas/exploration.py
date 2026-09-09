@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.chat import SourceChunk
 
@@ -21,6 +21,7 @@ class ExplorationSummary(BaseModel):
 
     id: int
     title: str
+    workspace_id: int
     created_at: datetime
     updated_at: datetime
     message_count: int
@@ -31,6 +32,11 @@ class ExplorationDetail(BaseModel):
 
     id: int
     title: str
+    workspace_id: int
     created_at: datetime
     updated_at: datetime
     messages: list[MessageRead]
+
+
+class ExplorationRename(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
