@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.api import auth, chat, documents, explorations, upload
+from app.api import admin_settings, auth, chat, documents, explorations, search, upload, workspaces
 from app.services.vector_store import get_vector_store
 
 
@@ -36,6 +36,9 @@ app.include_router(upload.router)
 app.include_router(documents.router)
 app.include_router(chat.router)
 app.include_router(explorations.router)
+app.include_router(workspaces.router)
+app.include_router(admin_settings.router)
+app.include_router(search.router)
 
 # Serve the built frontend (produced by `npm run build`, copied in at Docker
 # build time) - only present in the packaged/production image, so local

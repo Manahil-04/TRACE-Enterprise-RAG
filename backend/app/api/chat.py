@@ -6,13 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.core.security import get_current_user
+from app.core.security import ensure_workspace_access, get_current_user
+from app.models.document import Document
 from app.models.exploration import Exploration
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.chat import ChatRequest, ChatResponse, SourceChunk
 from app.services.llm import generate_answer
 from app.services.retrieval import retrieve
+from app.services.settings import get_settings_row
 from app.services.titles import derive_title
 
 router = APIRouter()
@@ -65,6 +67,7 @@ async def chat(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this exploration"
             )
+        workspace_id = exploration.workspace_id
         recent = (
             db.execute(
                 select(Message)
@@ -76,18 +79,43 @@ async def chat(
             .all()
         )
         history = [(m.question, m.answer) for m in reversed(recent)]
+    else:
+        if request.workspace_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="workspace_id is required when starting a new exploration",
+            )
+        ensure_workspace_access(db, current_user, request.workspace_id)
+        workspace_id = request.workspace_id
 
-    # Every question gets fresh retrieval against the current question alone -
-    # conversation history informs generation (below), not what gets searched.
+    workspace_documents = db.execute(select(Document).where(Document.workspace_id == workspace_id)).scalars().all()
+    documents_by_id = {d.id: d for d in workspace_documents}
+    document_ids = list(documents_by_id.keys())
+
+    rag_settings = get_settings_row(db)
+    k = request.k if request.k is not None else rag_settings.default_top_k
+
+    # Every question gets fresh retrieval against the current question alone,
+    # scoped to this workspace's documents - conversation history informs
+    # generation (below), not what gets searched.
     try:
-        chunks = retrieve(request.query, k=request.k)
+        chunks = retrieve(request.query, k=k, document_ids=document_ids)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to search the knowledge base. Please try again.",
         ) from exc
 
-    sources = [SourceChunk(text=c.text, source=c.source, page=c.page) for c in chunks]
+    sources = [
+        SourceChunk(
+            text=c.text,
+            source=c.source,
+            page=c.page,
+            document_id=c.document_id,
+            file_available=bool(documents_by_id[c.document_id].storage_path) if c.document_id in documents_by_id else False,
+        )
+        for c in chunks
+    ]
 
     if not chunks:
         # Nothing to ground an answer in - say so plainly rather than asking
@@ -113,7 +141,9 @@ async def chat(
         answer, follow_ups = split_follow_up_questions(raw_answer)
 
     if exploration is None:
-        exploration = Exploration(owner_id=current_user.id, title=derive_title(request.query))
+        exploration = Exploration(
+            owner_id=current_user.id, workspace_id=workspace_id, title=derive_title(request.query)
+        )
         db.add(exploration)
         db.flush()  # assign exploration.id before the message references it
 

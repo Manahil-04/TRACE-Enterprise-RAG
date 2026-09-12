@@ -46,19 +46,40 @@ class PgVectorStore:
                 rows,
             )
 
-    def search(self, query_embedding: list[float], k: int) -> list[ChunkMetadata]:
+    def search(
+        self, query_embedding: list[float], k: int, document_ids: list[int] | None = None
+    ) -> list[ChunkMetadata]:
+        # document_ids scopes retrieval to one workspace's documents. An empty
+        # (not None) list means "workspace has no documents" - nothing could
+        # possibly match, so skip the query rather than run an unfiltered one.
+        if document_ids is not None and not document_ids:
+            return []
+
         with self._conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT text, source, page, chunk_index, document_id FROM chunks "
-                "ORDER BY embedding <=> %s::vector LIMIT %s",
-                (query_embedding, k),
-            )
+            if document_ids is not None:
+                cursor.execute(
+                    "SELECT text, source, page, chunk_index, document_id, embedding <=> %s::vector AS distance "
+                    "FROM chunks WHERE document_id = ANY(%s) "
+                    "ORDER BY distance LIMIT %s",
+                    (query_embedding, document_ids, k),
+                )
+            else:
+                cursor.execute(
+                    "SELECT text, source, page, chunk_index, document_id, embedding <=> %s::vector AS distance "
+                    "FROM chunks ORDER BY distance LIMIT %s",
+                    (query_embedding, k),
+                )
             rows = cursor.fetchall()
         return [
             ChunkMetadata(
-                text=text, source=source, page=page, chunk_index=chunk_index, document_id=document_id
+                text=text,
+                source=source,
+                page=page,
+                chunk_index=chunk_index,
+                document_id=document_id,
+                distance=distance,
             )
-            for text, source, page, chunk_index, document_id in rows
+            for text, source, page, chunk_index, document_id, distance in rows
         ]
 
     def delete_by_document(self, document_id: int) -> None:

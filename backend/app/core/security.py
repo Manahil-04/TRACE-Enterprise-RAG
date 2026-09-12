@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.models.user import User
+from app.models.user import ADMIN_ROLE, User
+from app.models.workspace import Workspace
+from app.models.workspace_membership import WorkspaceMembership
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -55,3 +57,37 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != ADMIN_ROLE:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user
+
+
+def ensure_workspace_access(db: Session, user: User, workspace_id: int) -> Workspace:
+    """404 if the workspace doesn't exist, 403 if the user can't access it.
+    Admins bypass membership entirely; everyone else needs an explicit
+    WorkspaceMembership row. Returns the Workspace so callers don't have to
+    fetch it again."""
+    workspace = db.get(Workspace, workspace_id)
+    if workspace is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+
+    if user.role == ADMIN_ROLE:
+        return workspace
+
+    is_member = (
+        db.execute(
+            select(WorkspaceMembership).where(
+                WorkspaceMembership.workspace_id == workspace_id,
+                WorkspaceMembership.user_id == user.id,
+            )
+        ).scalar_one_or_none()
+        is not None
+    )
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to this workspace"
+        )
+    return workspace

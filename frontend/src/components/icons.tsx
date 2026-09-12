@@ -149,3 +149,108 @@ export function CloseIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function SunIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <line x1="12" y1="2" x2="12" y2="4" />
+      <line x1="12" y1="20" x2="12" y2="22" />
+      <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+      <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+      <line x1="2" y1="12" x2="4" y2="12" />
+      <line x1="20" y1="12" x2="22" y2="12" />
+      <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+      <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+    </Icon>
+  );
+}
+
+export function MoonIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </Icon>
+  );
+}
+
+export function PencilIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z" />
+      <path d="M15 5l4 4" />
+    </Icon>
+  );
+}
+
+export function DownloadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </Icon>
+  );
+}
+
+export function EyeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+export function ExternalLinkIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </Icon>
+  );
+}
+
+export function FolderIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Icon>
+  );
+}
+
+export function UsersIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </Icon>
+  );
+}
+
+export function SlidersIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <line x1="4" y1="21" x2="4" y2="14" />
+      <line x1="4" y1="10" x2="4" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12" y2="3" />
+      <line x1="20" y1="21" x2="20" y2="16" />
+      <line x1="20" y1="12" x2="20" y2="3" />
+      <line x1="1" y1="14" x2="7" y2="14" />
+      <line x1="9" y1="8" x2="15" y2="8" />
+      <line x1="17" y1="16" x2="23" y2="16" />
+    </Icon>
+  );
+}
+
+export function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <polyline points="6 9 12 15 18 9" />
+    </Icon>
+  );
+}

@@ -1,10 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { login as apiLogin, register as apiRegister, setUnauthorizedListener } from "../api";
+import {
+  getCurrentUser,
+  login as apiLogin,
+  register as apiRegister,
+  setUnauthorizedListener,
+  type CurrentUser,
+} from "../api";
 
 const TOKEN_STORAGE_KEY = "rag_token";
 
 interface AuthContextValue {
   token: string | null;
+  user: CurrentUser | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -16,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem(TOKEN_STORAGE_KEY)
   );
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
   // Any authenticated API call that comes back 401 (expired/invalid token)
   // clears the session here; ProtectedRoute already redirects to /login as
@@ -38,9 +46,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  // Role-gated UI (admin nav, settings) needs to know who's logged in, not
+  // just that a token exists - a decoded JWT claim would go stale for the
+  // whole token lifetime if an admin's role changed, so this is fetched
+  // fresh instead.
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    let cancelled = false;
+    getCurrentUser(token)
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch(() => {
+        // A failing /auth/me on a bad token already triggers the
+        // unauthorized listener above via throwIfError - nothing more to do.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       token,
+      user,
       login: async (email, password) => {
         const accessToken = await apiLogin(email, password);
         localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
@@ -54,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null);
       },
     }),
-    [token]
+    [token, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

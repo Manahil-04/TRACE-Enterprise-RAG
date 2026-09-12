@@ -11,6 +11,20 @@
       rel="stylesheet"
     />
     <title>TRACE</title>
+    <script>
+      // Runs synchronously before first paint so a stored theme choice applies
+      // immediately - no dark-then-light flash on load. Dark is the default
+      // identity regardless of OS preference; light only applies once the
+      // user has explicitly chosen it via the toggle.
+      (function () {
+        try {
+          var stored = localStorage.getItem("trace_theme");
+          document.documentElement.setAttribute("data-theme", stored === "light" ? "light" : "dark");
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

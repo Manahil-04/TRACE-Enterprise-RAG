@@ -1,5 +1,6 @@
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { useWorkspace } from "../workspace/WorkspaceContext";
 import { uploadDocument } from "../api";
 import { mapError } from "../lib/errorMessages";
 import { CloudUploadIcon, FileIcon, UploadIcon } from "../components/icons";
@@ -9,12 +10,15 @@ type UploadStatus = "idle" | "uploading" | "indexing" | "success" | "error";
 
 export function UploadPage() {
   const { token } = useAuth();
+  const { workspaces, activeWorkspaceId } = useWorkspace();
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [progress, setProgress] = useState(0);
-  const [indexedName, setIndexedName] = useState<string | null>(null);
+  const [indexedResult, setIndexedResult] = useState<{ filename: string; ocrUsed: boolean } | null>(null);
   const [error, setError] = useState<ReturnType<typeof mapError> | null>(null);
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
 
   function selectFile(next: File | null) {
     setFile(next);
@@ -31,17 +35,17 @@ export function UploadPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token || !file) return;
+    if (!token || !file || activeWorkspaceId === null) return;
     setError(null);
     setProgress(0);
     setStatus("uploading");
     try {
-      const result = await uploadDocument(token, file, (pct) => {
+      const result = await uploadDocument(token, file, activeWorkspaceId, (pct) => {
         setProgress(pct);
         if (pct >= 100) setStatus("indexing");
       });
       setStatus("success");
-      setIndexedName(result.filename);
+      setIndexedResult({ filename: result.filename, ocrUsed: result.ocr_used });
       setFile(null);
     } catch (err) {
       setStatus("error");
@@ -56,11 +60,24 @@ export function UploadPage() {
       <div className="page-header">
         <span className="eyebrow">Add to the archive</span>
         <h1 className="heading-display">Add document</h1>
-        <p>Documents are chunked, embedded, and stored entirely on your own infrastructure.</p>
+        <p>
+          Documents are chunked, embedded, and stored entirely on your own infrastructure
+          {activeWorkspace ? (
+            <>
+              , into <strong>{activeWorkspace.name}</strong>
+            </>
+          ) : null}
+          .
+        </p>
       </div>
 
-      {status === "success" && indexedName && (
-        <Notice type="success" title="Indexed" message={indexedName} onDismiss={() => setStatus("idle")} />
+      {status === "success" && indexedResult && (
+        <Notice
+          type="success"
+          title="Indexed"
+          message={indexedResult.ocrUsed ? `${indexedResult.filename} · text extracted via OCR` : indexedResult.filename}
+          onDismiss={() => setStatus("idle")}
+        />
       )}
 
       {status === "error" && error && (
@@ -113,7 +130,7 @@ export function UploadPage() {
           )}
 
           <div className="upload-actions">
-            <button type="submit" disabled={!file}>
+            <button type="submit" disabled={!file || activeWorkspaceId === null}>
               <UploadIcon width={16} height={16} />
               Add document
             </button>
