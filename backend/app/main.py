@@ -17,7 +17,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
 
 
 app = FastAPI(
-    title="Enclave",
+    title="TRACE",
     description="Self-hosted RAG for privacy-conscious organizations.",
     lifespan=lifespan,
 )
