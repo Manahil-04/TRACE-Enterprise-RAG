@@ -56,6 +56,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+    if not user.is_active:
+        # Deactivated mid-session: cut the existing token off immediately
+        # rather than letting it work until natural expiry.
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account has been deactivated")
+
     return user
 
 
