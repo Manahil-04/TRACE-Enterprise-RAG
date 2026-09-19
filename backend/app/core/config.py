@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 30
 
+    # Document storage / OCR - not wired up to any code yet, declared so the
+    # app boots with these already set in .env ahead of that feature landing
+    STORAGE_DIR: str = "./storage/documents"
+    TESSERACT_CMD: str | None = None
+
     class Config:
         env_file = ".env"
 
