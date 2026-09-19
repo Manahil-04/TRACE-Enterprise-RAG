@@ -85,6 +85,7 @@ export interface UserSummary {
   id: number;
   email: string;
   role: Role;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -99,6 +100,16 @@ export async function updateUserRole(token: string, userId: number, role: Role):
     method: "PATCH",
     headers: jsonHeaders(token),
     body: JSON.stringify({ role }),
+  });
+  await throwIfError(response);
+  return response.json();
+}
+
+export async function updateUserStatus(token: string, userId: number, isActive: boolean): Promise<UserSummary> {
+  const response = await fetch(`${API_BASE_URL}/auth/users/${userId}/status`, {
+    method: "PATCH",
+    headers: jsonHeaders(token),
+    body: JSON.stringify({ is_active: isActive }),
   });
   await throwIfError(response);
   return response.json();

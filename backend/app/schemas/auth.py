@@ -25,11 +25,16 @@ class UserSummary(BaseModel):
     id: int
     email: EmailStr
     role: Role
+    is_active: bool
     created_at: datetime
 
 
 class UserRoleUpdate(BaseModel):
     role: Role
+
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
 
 
 class Token(BaseModel):

@@ -14,7 +14,7 @@ from app.core.security import (
 from app.models.user import ADMIN_ROLE, DEFAULT_ROLE, User
 from app.models.workspace import Workspace
 from app.models.workspace_membership import WorkspaceMembership
-from app.schemas.auth import Token, UserCreate, UserRead, UserRoleUpdate, UserSummary
+from app.schemas.auth import Token, UserCreate, UserRead, UserRoleUpdate, UserStatusUpdate, UserSummary
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -56,6 +56,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password"
         )
 
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account has been deactivated")
+
     return Token(access_token=create_access_token(subject=user.email))
 
 
@@ -91,6 +94,31 @@ def update_user_role(
             )
 
     user.role = payload.role
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}/status", response_model=UserSummary)
+def update_user_status(
+    user_id: int,
+    payload: UserStatusUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> User:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if user.id == current_user.id and not payload.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can't deactivate your own account - ask another admin to do it",
+        )
+
+    # Deactivating only blocks login/access; their documents and explorations
+    # are left untouched, same attribution as before. See UserStatusUpdate.
+    user.is_active = payload.is_active
     db.commit()
     db.refresh(user)
     return user

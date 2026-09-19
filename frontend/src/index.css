@@ -2186,6 +2186,24 @@ a {
   font-size: 0.82rem;
 }
 
+/* Deactivate/reactivate toggle: the icon itself carries current status
+   (checkmark = active, x = deactivated), tinted red while deactivated so a
+   disabled account is visible without hovering. Hover color previews the
+   action the click will take - red to deactivate, green to reactivate. */
+.admin-list-row-actions .icon-button.status-inactive {
+  color: var(--color-danger);
+}
+
+.admin-list-row-actions .icon-button.status-active:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.admin-list-row-actions .icon-button.status-inactive:hover:not(:disabled) {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
 .new-workspace-form {
   display: flex;
   gap: 0.6rem;
